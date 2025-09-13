@@ -3,17 +3,17 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Exo 2</title>
+    <title>Exo 2 - Contrôle de la Caméra</title>
     <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
     <style>
       html, body { margin: 0; height: 100%; background: #000; }
-      .hint { 
-        position: fixed; left: 12px; bottom: 12px; 
-        padding: 8px 12px; 
-        background: rgba(0,0,0,.55); 
-        color: #fff; 
-        font: 14px/1.3 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; 
-        border-radius: 8px; 
+      .hint {
+        position: fixed; left: 12px; bottom: 12px;
+        padding: 8px 12px;
+        background: rgba(0,0,0,.55);
+        color: #fff;
+        font: 14px/1.3 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        border-radius: 8px;
       }
       .hint kbd{ padding:2px 6px; border:1px solid #888; border-bottom-width:2px; border-radius:4px; background:#111 }
     </style>
@@ -30,11 +30,9 @@
       <a-entity light="type: ambient; intensity: 0.45"></a-entity>
       <a-entity light="type: directional; intensity: 0.8" position="0 5 5"></a-entity>
 
-      <!-- Sol -->
       <a-plane id="ground" rotation="-90 0 0" width="200" height="200"
-               material="src: #grass; repeat: 50 50; roughness: 1; metalness: 0; side: double"></a-plane>
+                material="src: #grass; repeat: 50 50; roughness: 1; metalness: 0; side: double"></a-plane>
 
-      <!-- Joueur (cube) -->
       <a-entity id="player"
                 geometry="primitive: box; width: 1; height: 1; depth: 1"
                 material="color: #4cc3d9; metalness: 0; roughness: 1"
@@ -42,23 +40,21 @@
                 player-controller="groundY: 0; accel: 20; maxSpeed: 8; decel: 14; gravity: 25; jumpSpeed: 8">
       </a-entity>
 
-      <!-- Pivot de la caméra -->
-      <a-entity id="camera-pivot"
-                animation="property: rotation; to: 0 360 0; loop: true; dur: 10000; easing: linear">
-        <!-- Caméra en 3e personne -->
-        <a-entity id="third-person-camera" 
-                  camera="active: true" 
+      <a-entity id="camera-pivot" mouse-orbit-camera>
+        <a-entity id="third-person-camera"
+                  camera="active: true"
                   position="0 2 8"
                   look-at="#player">
         </a-entity>
       </a-entity>
     </a-scene>
 
-    <div class="hint">Utilise 
-      <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> ou <kbd>Z</kbd> <kbd>Q</kbd> <kbd>S</kbd> <kbd>D</kbd> 
-      pour se déplacer et <kbd>ESPACE</kbd> pour sauter.</div>
+    <div class="hint">Utilise
+      <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> ou <kbd>Z</kbd> <kbd>Q</kbd> <kbd>S</kbd> <kbd>D</kbd>
+      pour se déplacer et <kbd>ESPACE</kbd> pour sauter. Clique et déplace la souris pour faire pivoter la caméra.</div>
 
     <script>
+      // Composant pour le contrôle du joueur (mouvement et saut)
       AFRAME.registerComponent('player-controller', {
         schema: {
           groundY: { type: 'number', default: 0 },
@@ -68,27 +64,23 @@
           gravity: { type: 'number', default: 25 },
           jumpSpeed:{type: 'number', default: 8 }
         },
-
         init: function () {
           this.vel = new THREE.Vector3();
           this.input = { f:false, b:false, l:false, r:false, jump:false };
           this.grounded = false;
           this.halfH = 0.5;
-
           this.computeHalfHeight();
-
           const p = this.el.object3D.position;
           p.y = this.data.groundY + this.halfH;
-
+          this.onKeyDown = this.onKeyDown.bind(this);
+          this.onKeyUp = this.onKeyUp.bind(this);
           window.addEventListener('keydown', this.onKeyDown);
           window.addEventListener('keyup',   this.onKeyUp);
         },
-
         remove: function(){
           window.removeEventListener('keydown', this.onKeyDown);
           window.removeEventListener('keyup',   this.onKeyUp);
         },
-
         computeHalfHeight: function(){
           const g = this.el.getAttribute('geometry');
           if (g && g.primitive === 'box') {
@@ -101,52 +93,46 @@
             this.halfH = size.y * 0.5 || 0.5;
           }
         },
-
         onKeyDown: function(e){
           const k = (e.key || '').toLowerCase();
-          const self = AFRAME.scenes[0].querySelector('#player').components['player-controller'];
-          if (!self) return;
-          if (k === 'w' || k === 'z') self.input.f = true;
-          if (k === 's')               self.input.b = true;
-          if (k === 'a' || k === 'q') self.input.l = true;
-          if (k === 'd')               self.input.r = true;
-          if (k === ' ')               self.input.jump = true;
+          if (k === 'w' || k === 'z') this.input.f = true;
+          if (k === 's')             this.input.b = true;
+          if (k === 'a' || k === 'q') this.input.l = true;
+          if (k === 'd')             this.input.r = true;
+          if (k === ' ')             this.input.jump = true;
         },
-
         onKeyUp: function(e){
           const k = (e.key || '').toLowerCase();
-          const self = AFRAME.scenes[0].querySelector('#player').components['player-controller'];
-          if (!self) return;
-          if (k === 'w' || k === 'z') self.input.f = false;
-          if (k === 's')               self.input.b = false;
-          if (k === 'a' || k === 'q') self.input.l = false;
-          if (k === 'd')               self.input.r = false;
-          if (k === ' ')               self.input.jump = false;
+          if (k === 'w' || k === 'z') this.input.f = false;
+          if (k === 's')             this.input.b = false;
+          if (k === 'a' || k === 'q') this.input.l = false;
+          if (k === 'd')             this.input.r = false;
+          if (k === ' ')             this.input.jump = false;
         },
-
         tick: function (time, dt) {
           if (!dt) return;
           dt = dt / 1000;
-
           const data = this.data;
           const pos = this.el.object3D.position;
           const vel = this.vel;
-
-          const inX = (this.input.r ? 1 : 0) + (this.input.l ? -1 : 0);
-          const inZ = (this.input.b ? 1 : 0) + (this.input.f ? -1 : 0);
-
-          const wish = new THREE.Vector3(inX, 0, inZ);
+          const pivotEl = document.getElementById('camera-pivot');
+          const pivotRot = pivotEl.object3D.rotation.y;
+          const forwardVec = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), pivotRot);
+          const rightVec = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), pivotRot);
+          let wish = new THREE.Vector3();
+          if (this.input.f) wish.add(forwardVec);
+          if (this.input.b) wish.sub(forwardVec);
+          if (this.input.r) wish.add(rightVec);
+          if (this.input.l) wish.sub(rightVec);
           if (wish.lengthSq() > 0) {
             wish.normalize().multiplyScalar(data.maxSpeed);
             this.approach(vel, wish, data.accel * dt);
           } else {
             this.applyDecel(vel, data.decel * dt);
           }
-
           const groundLevel = data.groundY + this.halfH;
           const onGround = (pos.y <= groundLevel + 1e-4);
           this.grounded = onGround;
-
           if (onGround) {
             pos.y = groundLevel;
             if (vel.y < 0) vel.y = 0;
@@ -156,32 +142,45 @@
           } else {
             vel.y -= data.gravity * dt;
           }
-
           pos.x += vel.x * dt;
           pos.y += vel.y * dt;
           pos.z += vel.z * dt;
-
           if (pos.y < groundLevel) {
             pos.y = groundLevel;
             if (vel.y < 0) vel.y = 0;
             this.grounded = true;
           }
-
-          // Met à jour la position du pivot caméra
-          const pivotEl = document.getElementById('camera-pivot');
           pivotEl.object3D.position.copy(pos);
         },
-
         approach: function(vel, wish, step){
           const dx = wish.x - vel.x;
           if (Math.abs(dx) > step) vel.x += step * Math.sign(dx); else vel.x = wish.x;
           const dz = wish.z - vel.z;
           if (Math.abs(dz) > step) vel.z += step * Math.sign(dz); else vel.z = wish.z;
         },
-
         applyDecel: function(vel, step){
           if (Math.abs(vel.x) <= step) vel.x = 0; else vel.x -= step * Math.sign(vel.x);
           if (Math.abs(vel.z) <= step) vel.z = 0; else vel.z -= step * Math.sign(vel.z);
+        }
+      });
+      // Composant pour le contrôle de l'orbite de la caméra avec la souris
+      AFRAME.registerComponent('mouse-orbit-camera', {
+        init: function () {
+          this.isDragging = false;
+          this.lastMouseX = 0;
+          this.el.sceneEl.addEventListener('mousedown', (evt) => {
+            this.isDragging = true;
+            this.lastMouseX = evt.clientX;
+          });
+          this.el.sceneEl.addEventListener('mouseup', () => {
+            this.isDragging = false;
+          });
+          this.el.sceneEl.addEventListener('mousemove', (evt) => {
+            if (!this.isDragging) return;
+            const deltaX = evt.clientX - this.lastMouseX;
+            this.el.object3D.rotation.y -= deltaX * 0.005;
+            this.lastMouseX = evt.clientX;
+          });
         }
       });
     </script>
