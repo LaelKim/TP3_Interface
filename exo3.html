@@ -163,23 +163,47 @@
           if (Math.abs(vel.z) <= step) vel.z = 0; else vel.z -= step * Math.sign(vel.z);
         }
       });
+      
       // Composant pour le contrôle de l'orbite de la caméra avec la souris
       AFRAME.registerComponent('mouse-orbit-camera', {
         init: function () {
           this.isDragging = false;
           this.lastMouseX = 0;
+          this.lastMouseY = 0;
+          
+          this.minPitch = -15 * Math.PI / 180; // -15 degrés en radians
+          this.maxPitch = 45 * Math.PI / 180;  // 45 degrés en radians
+
           this.el.sceneEl.addEventListener('mousedown', (evt) => {
             this.isDragging = true;
             this.lastMouseX = evt.clientX;
+            this.lastMouseY = evt.clientY;
           });
+          
           this.el.sceneEl.addEventListener('mouseup', () => {
             this.isDragging = false;
           });
+
           this.el.sceneEl.addEventListener('mousemove', (evt) => {
             if (!this.isDragging) return;
+            
             const deltaX = evt.clientX - this.lastMouseX;
+            const deltaY = evt.clientY - this.lastMouseY;
+
+            // Rotation horizontale (Yaw)
             this.el.object3D.rotation.y -= deltaX * 0.005;
+
+            // Rotation verticale (Pitch) sur la caméra elle-même
+            const cameraEl = this.el.querySelector('#third-person-camera');
+            if (cameraEl) {
+              let newPitch = cameraEl.object3D.rotation.x - deltaY * 0.005;
+              // Clamping de la rotation verticale
+              newPitch = Math.max(this.minPitch, Math.min(this.maxPitch, newPitch));
+              cameraEl.object3D.rotation.x = newPitch;
+            }
+
             this.lastMouseX = evt.clientX;
+            this.lastMouseY = evt.clientY;
           });
         }
       });
