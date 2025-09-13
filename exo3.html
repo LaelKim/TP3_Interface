@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Exo 2 - Contrôle de la Caméra et Zoom</title>
+    <title>Exo 2 - Contrôle de la Caméra et du Personnage</title>
     <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
     <style>
       html, body { margin: 0; height: 100%; background: #000; }
@@ -116,7 +116,11 @@
           const pos = this.el.object3D.position;
           const vel = this.vel;
           const pivotEl = document.getElementById('camera-pivot');
+          
+          // Rotation du joueur en fonction de la rotation horizontale de la caméra
           const pivotRot = pivotEl.object3D.rotation.y;
+          this.el.object3D.rotation.y = pivotRot;
+          
           const forwardVec = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), pivotRot);
           const rightVec = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), pivotRot);
           let wish = new THREE.Vector3();
@@ -176,15 +180,14 @@
           this.lastMouseX = 0;
           this.lastMouseY = 0;
           
-          this.minPitch = -15 * Math.PI / 180; // -15 degrés en radians
-          this.maxPitch = 45 * Math.PI / 180;  // 45 degrés en radians
+          this.minPitch = -15 * Math.PI / 180;
+          this.maxPitch = 45 * Math.PI / 180;
 
-          this.currentZoom = this.data.initialZoom; // Initialisation du zoom
+          this.currentZoom = this.data.initialZoom;
 
-          // Définir la position initiale de la caméra en fonction du zoom
           const cameraEl = this.el.querySelector('#third-person-camera');
           if (cameraEl) {
-            cameraEl.object3D.position.z = this.currentZoom; // Utilise le zoom comme distance sur Z
+            cameraEl.object3D.position.z = this.currentZoom;
           }
 
           this.onMouseDown = this.onMouseDown.bind(this);
@@ -195,60 +198,44 @@
           this.el.sceneEl.addEventListener('mousedown', this.onMouseDown);
           this.el.sceneEl.addEventListener('mouseup', this.onMouseUp);
           this.el.sceneEl.addEventListener('mousemove', this.onMouseMove);
-          this.el.sceneEl.addEventListener('wheel', this.onMouseWheel); // Écoute l'événement de la molette
+          this.el.sceneEl.addEventListener('wheel', this.onMouseWheel);
         },
-
         remove: function() {
           this.el.sceneEl.removeEventListener('mousedown', this.onMouseDown);
           this.el.sceneEl.removeEventListener('mouseup', this.onMouseUp);
           this.el.sceneEl.removeEventListener('mousemove', this.onMouseMove);
           this.el.sceneEl.removeEventListener('wheel', this.onMouseWheel);
         },
-
         onMouseDown: function(evt) {
           this.isDragging = true;
           this.lastMouseX = evt.clientX;
           this.lastMouseY = evt.clientY;
         },
-
         onMouseUp: function() {
           this.isDragging = false;
         },
-
         onMouseMove: function(evt) {
           if (!this.isDragging) return;
-          
           const deltaX = evt.clientX - this.lastMouseX;
           const deltaY = evt.clientY - this.lastMouseY;
-
-          // Rotation horizontale (Yaw) du pivot
           this.el.object3D.rotation.y -= deltaX * 0.005;
-
-          // Rotation verticale (Pitch) de la caméra elle-même
           const cameraEl = this.el.querySelector('#third-person-camera');
           if (cameraEl) {
             let newPitch = cameraEl.object3D.rotation.x - deltaY * 0.005;
             newPitch = Math.max(this.minPitch, Math.min(this.maxPitch, newPitch));
             cameraEl.object3D.rotation.x = newPitch;
           }
-
           this.lastMouseX = evt.clientX;
           this.lastMouseY = evt.clientY;
         },
-
         onMouseWheel: function(evt) {
-          evt.preventDefault(); // Empêche le défilement de la page
-          
-          const zoomSpeed = 0.5; // Vitesse de zoom
-
-          // Détection de la direction de la molette
-          if (evt.deltaY > 0) { // Molette vers le bas (dézoomer)
+          evt.preventDefault();
+          const zoomSpeed = 0.5;
+          if (evt.deltaY > 0) {
             this.currentZoom = Math.min(this.data.maxZoom, this.currentZoom + zoomSpeed);
-          } else { // Molette vers le haut (zoomer)
+          } else {
             this.currentZoom = Math.max(this.data.minZoom, this.currentZoom - zoomSpeed);
           }
-
-          // Appliquer le nouveau zoom à la position Z de la caméra
           const cameraEl = this.el.querySelector('#third-person-camera');
           if (cameraEl) {
             cameraEl.object3D.position.z = this.currentZoom;
